@@ -1,0 +1,16 @@
+version: '3'
+services:
+  web:
+    build: web/.
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    ports:
+      - 8000-8005:8000
+
+  balancer:
+    build: balancer/.
+    command: uvicorn balancer:app --host 0.0.0.0 --port 8989
+    ports:
+      - 8989:8989
+    depends_on:
+      - web
+
