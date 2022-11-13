@@ -2,27 +2,16 @@ from fastapi import BackgroundTasks, FastAPI
 from typing import Union
 import httpx
 import time
+from settings import SERVERS_ADDRESSES
 
 
 app = FastAPI()
 
-"""
-Имя сервера зависит от директории проекта.
-[корневая_папка]_[название_сервиса]_[номер_сервиса]:[порт]
-
-"""
-servers = [
-    'fastapi_load_balancer_web_1:8000',
-    'fastapi_load_balancer_web_2:8000',
-    'fastapi_load_balancer_web_3:8000',
-    'fastapi_load_balancer_web_4:8000',
-    'fastapi_load_balancer_web_5:8000',
-    'fastapi_load_balancer_web_6:8000'
-]
+servers = SERVERS_ADDRESSES
 
 
 @app.get("/{path:path}")
-async def balancer(background_health_check: BackgroundTasks, path: Union[str, None] = None):
+async def balancer(background_health_check: BackgroundTasks, servers: list, path: Union[str, None] = None):
     """
     Реализован алгоритм балансировки Round-robin
 
@@ -30,7 +19,7 @@ async def balancer(background_health_check: BackgroundTasks, path: Union[str, No
     try:
         host_name = servers.pop(0)
     except IndexError:
-        return 'servers not found'
+        return 'host not found'
     host_name = check_status_server(host_name, background_health_check)
     async with httpx.AsyncClient() as client:
         response = await client.get(f'http://{host_name}/{path}')
@@ -53,7 +42,7 @@ def check_status_server(host_name, background_health_check):
             host_name = servers.pop(0)
             return check_status_server(host_name, background_health_check)
         except IndexError:
-            return 'servers not found'
+            return 'host not found'
 
 
 def health_check(host_name):
